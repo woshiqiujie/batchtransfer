@@ -11,6 +11,7 @@ import java.util.List;
 @Repository
 public interface BatchTransferSummaryRepository extends JpaRepository<BatchTransferSummary, Long> {
 
+
     @Query("SELECT b FROM BatchTransferSummary b WHERE " +
             "( :environment = '' OR b.environment = :environment ) AND " +
             "( :batchNo = '' OR b.batchNo LIKE :batchNo ) AND " +
@@ -21,4 +22,6 @@ public interface BatchTransferSummaryRepository extends JpaRepository<BatchTrans
             @Param("batchNo") String batchNo,
             @Param("payerWallet") String payerWallet,
             @Param("fileType") String fileType);
+
+
 }

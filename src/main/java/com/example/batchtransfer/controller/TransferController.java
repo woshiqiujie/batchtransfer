@@ -39,6 +39,9 @@ public class TransferController {
             return ResponseEntity.badRequest().body(errorResponse);
 
         } catch (Exception e) {
+            // 打印堆栈信息，帮助调试
+            e.printStackTrace();
+
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("statusCode", "1");
             errorResponse.put("message", "服务器内部错误: " + e.getMessage());

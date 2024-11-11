@@ -38,53 +38,117 @@ public class TransferService {
     public Map<String, Object> validateSummaryInfo(SummaryInfo summaryInfo) {
         Map<String, Object> errors = new HashMap<>();
 
-        // 校验环境字段
-        if (!summaryInfo.getEnvironment().matches("01|02")) {
-            errors.put("environment", "环境字段必须为 01 或 02");
-        }
-        // 校验中心标志
-        if (!summaryInfo.getCenterFlag().matches("01|02")) {
-            errors.put("centerFlag", "中心标志必须为 01 或 02");
-        }
-        // 校验合作银行编号
-        if (summaryInfo.getPartnerBankCode().length() > 14) {
-            errors.put("partnerBankCode", "合作银行编号长度不能超过 14 个字符");
-        }
-        // 校验机构代码
-        if (summaryInfo.getInstitutionCode() == null || !summaryInfo.getInstitutionCode().matches("\\d{3}")) {
-            throw new IllegalArgumentException("机构代码必须为 3 个数字");
-        }
-        // 校验文件类型
-        if (!summaryInfo.getFileType().matches("03|07")) {
-            errors.put("fileType", "文件类型必须为 03 或 07");
+        // 确保 summaryInfo 不为 null
+        if (summaryInfo == null) {
+            errors.put("summaryInfo", "SummaryInfo 对象不能为空");
+            return errors;
         }
 
-        // 校验每一笔交易
-        for (TransactionInfo transaction : summaryInfo.getTransactions()) {
-            if (transaction.getSerialNo() == null || transaction.getSerialNo().length() > 16) {
-                errors.put("serialNo", "序号长度不能超过 16 个字符");
-            }
-            if (transaction.getRecipientWalletID() == null || transaction.getRecipientWalletID().length() > 16) {
-                errors.put("recipientWalletID", "收款方钱包ID 长度不能超过 16 个字符");
-            }
-            if (transaction.getRecipientUserName() == null || transaction.getRecipientUserName().length() > 60) {
-                errors.put("recipientUserName", "收款方用户名称 长度不能超过 60 个字符");
-            }
-            if (transaction.getTransferAmount() == 0 || transaction.getTransferAmount() < 0) {
-                errors.put("transferAmount", "转款金额为必填项，且必须大于零");
-            }
-            if (transaction.getPaymentPurpose() == null || transaction.getPaymentPurpose().length() > 4) {
-                errors.put("paymentPurpose", "付款用途 长度不能超过 4 个字符");
+        // 检查批次号是否为空或长度不符合要求
+        if (summaryInfo.getBatchNo() == null || summaryInfo.getBatchNo().length() != 32) {
+            errors.put("batchNo", "批次号不能为空且必须为32个字符");
+        }
+
+        // 检查付款钱包是否为空
+        if (summaryInfo.getPayerWallet() == null || summaryInfo.getPayerWallet().isEmpty()) {
+            errors.put("payerWallet", "付款钱包不能为空");
+        }
+
+        // 检查付款方钱包名称是否为空
+        if (summaryInfo.getPayerWalletName() == null || summaryInfo.getPayerWalletName().isEmpty()) {
+            errors.put("payerWalletName", "付款方钱包名称不能为空");
+        }
+
+        // 检查环境字段是否符合要求
+        if (summaryInfo.getEnvironment() == null || (!summaryInfo.getEnvironment().equals("01") && !summaryInfo.getEnvironment().equals("02"))) {
+            errors.put("environment", "环境字段只能为 '01' 或 '02'");
+        }
+        if (summaryInfo.getCenterFlag() == null || summaryInfo.getCenterFlag().isEmpty()) {
+            errors.put("centerFlag", "Center Flag 不能为空");
+        }
+        if (summaryInfo.getPartnerBankCode() == null || summaryInfo.getPartnerBankCode().isEmpty()) {
+            errors.put("partnerBankCode", "合作银行代码不能为空");
+        }
+        if (summaryInfo.getInstitutionCode() == null || summaryInfo.getInstitutionCode().isEmpty()) {
+            errors.put("institutionCode", "机构代码不能为空");
+        }
+        if (summaryInfo.getFileType() == null || summaryInfo.getFileType().isEmpty()) {
+            errors.put("fileType", "文件类型不能为空");
+        }
+        if (summaryInfo.getTransactions() == null) {
+            errors.put("transactions", "交易列表不能为空");
+        }
+
+        // 校验交易列表是否为空
+        if (summaryInfo.getTransactions() == null || summaryInfo.getTransactions().isEmpty()) {
+            errors.put("transactions", "交易列表不能为空");
+        } else {
+            // 校验每一笔交易
+            for (TransactionInfo transaction : summaryInfo.getTransactions()) {
+                if (transaction == null) {
+                    errors.put("transaction", "交易信息不能为空");
+                    continue;  // 跳过该笔交易
+                }
+
+                // 检查序号是否为空或超长
+                if (transaction.getSerialNo() == null || transaction.getSerialNo().length() > 16) {
+                    errors.put("serialNo", "交易序号不能为空且长度不能超过16个字符");
+                }
+
+                // 检查收款方钱包ID
+                if (transaction.getRecipientWalletID() == null || transaction.getRecipientWalletID().length() > 16) {
+                    errors.put("recipientWalletID", "收款方钱包ID不能为空且长度不能超过16个字符");
+                }
+
+                // 检查收款方用户名称是否为空
+                if (transaction.getRecipientUserName() == null || transaction.getRecipientUserName().isEmpty()) {
+                    errors.put("recipientUserName", "收款方用户名称不能为空");
+                }
+
+                // 检查转款金额是否合理
+                if (transaction.getTransferAmount() == 0 || transaction.getTransferAmount() <= 0) {
+                    errors.put("transferAmount", "转款金额必须大于0");
+                }
+
+                // 检查付款用途
+                if (transaction.getPaymentPurpose() == null || transaction.getPaymentPurpose().length() != 4) {
+                    errors.put("paymentPurpose", "付款用途必须为4个字符");
+                }
+
+                // 检查用途描述
+                if (transaction.getPurposeDescription() != null && transaction.getPurposeDescription().length() > 100) {
+                    errors.put("purposeDescription", "用途描述的长度不能超过100个字符");
+                }
+
+                // 检查交易附言
+                if (transaction.getTransactionNote() != null && transaction.getTransactionNote().length() > 240) {
+                    errors.put("transactionNote", "交易附言的长度不能超过240个字符");
+                }
+
+                // 检查摘要是否超长
+                if (transaction.getSummary() != null && transaction.getSummary().length() > 300) {
+                    errors.put("summary", "摘要的长度不能超过300个字符");
+                }
             }
         }
 
         return errors.isEmpty() ? null : errors;
     }
 
+
+
     // 生成批量转账文件并执行转账
     public Map<String, String> generateBatchTransferFile(SummaryInfo summaryInfo) throws IOException {
+        // 确保传入的 summaryInfo 对象不为 null，并且正确处理
+        if (summaryInfo == null) {
+            throw new IllegalArgumentException("SummaryInfo cannot be null");
+        }
+
         // 校验批次号、付款方钱包ID、付款方钱包名称等信息
-        validateSummaryInfo(summaryInfo);
+        Map<String, Object> errors = validateSummaryInfo(summaryInfo);
+        if (errors != null && !errors.isEmpty()) {
+            throw new IllegalArgumentException("校验错误: " + errors.toString());
+        }
 
         // 生成文件名
         String fileName = String.format("INTERBANK_TRANSFER_%s_0000_%s_I_%04d_%04d.txt",
@@ -153,6 +217,9 @@ public class TransferService {
                 file.getPath()
         );
 
+        System.out.println("Center Flag: " + summaryInfo.getCenterFlag());  // 输出 center_flag 的值
+
+
         // 保存汇总信息到数据库
         BatchTransferSummary summary = new BatchTransferSummary();
         summary.setBatchNo(summaryInfo.getBatchNo());
@@ -189,5 +256,4 @@ public class TransferService {
                 fileType == null ? "" : fileType
         );
     }
-
 }
