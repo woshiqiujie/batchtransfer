@@ -2,6 +2,14 @@ select *from payment_wallets;
 select *from receiver_info;
 select *from batch_transfer_summary;
 
+
+select *from payment_wallets where payment_wallets.environment = '01'and transfer_type = '00';
+select *from receiver_info where environment = '01'and transfer_type = '01';
+
+
+ALTER USER postgres WITH PASSWORD 'qwer1234';
+
+
 show   payment_wallets; -- 查看表的结构
 
 DROP TABLE IF EXISTS public.payment_wallets;
@@ -9,23 +17,60 @@ DROP TABLE IF EXISTS public.receiver_info;
 DROP TABLE IF EXISTS public.batch_transfer_summary;
 
 
--- 创建表
+-- 支付钱包表
 CREATE TABLE public.payment_wallets (
                                         wallet_id_account VARCHAR(60) PRIMARY KEY,  -- 钱包ID/账户
                                         wallet_account_name VARCHAR(60),  -- 钱包/账户名称
                                         contract_number VARCHAR(34),  -- 签约协议号
                                         bank_code VARCHAR(14),  -- 合作银行编号
                                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
-                                        transfer_type VARCHAR(2) NOT NULL  -- 转出方类型 (00-对公钱包, 01-对公账户)
+                                        transfer_type VARCHAR(2) NOT NULL,  -- 转出方类型 (00-对公钱包, 01-对公账户)
+                                        environment VARCHAR(2) NOT NULL,  -- 环境 (01-定版, 02-预演)
+                                        remarks VARCHAR(60) NOT NULL  -- 备注
 );
+---收款钱包表
+CREATE TABLE public.receiver_info (
+                                      transfer_type character varying(2) NOT NULL,  -- 转入方类型
+                                      receiver_id character varying(19) NOT NULL,  -- 收款钱包ID/手机号/身份证号
+                                      user_name character varying(60) NOT NULL,  -- 用户名称
+                                      created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
+                                      CONSTRAINT receiver_info_pkey PRIMARY KEY(receiver_id),  -- 主键为收款账户ID
+                                      environment VARCHAR(2) NOT NULL,  -- 环境 (01-定版, 02-预演)
+                                      remarks VARCHAR(60) NOT NULL  -- 备注
+);
+
+
+-- 添加中文注释
+COMMENT ON TABLE public.payment_wallets IS '支付钱包表';
+COMMENT ON COLUMN public.payment_wallets.wallet_id_account IS '钱包ID/账户';
+COMMENT ON COLUMN public.payment_wallets.wallet_account_name IS '钱包/账户名称';
+COMMENT ON COLUMN public.payment_wallets.contract_number IS '签约协议号';
+COMMENT ON COLUMN public.payment_wallets.bank_code IS '合作银行编号';
+COMMENT ON COLUMN public.payment_wallets.created_at IS '创建时间';
+COMMENT ON COLUMN public.payment_wallets.transfer_type IS '转出方类型 (00-对公钱包, 01-对公账户)';
+COMMENT ON COLUMN public.payment_wallets.environment IS '环境 (01-定版, 02-预演)';
+COMMENT ON COLUMN public.payment_wallets.remarks IS '备注';
+
+
+
+--收款钱包表
+CREATE TABLE public.receiver_info (
+                                      transfer_type character varying(2) NOT NULL,  -- 转入方类型
+                                      receiver_id character varying(19) NOT NULL,  -- 收款钱包ID/手机号/身份证号
+                                      user_name character varying(60) NOT NULL,  -- 用户名称
+                                      created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
+                                      CONSTRAINT receiver_info_pkey PRIMARY KEY(receiver_id),  -- 主键为收款账户ID
+                                      environment VARCHAR(2) NOT NULL,  -- 环境 (01-定版, 02-预演)
+                                      remarks VARCHAR(60) NOT NULL  -- 备注
+);
+
 
 
 ALTER TABLE payment_wallets
     ADD COLUMN environment VARCHAR(2) DEFAULT '01' NOT NULL CHECK (environment IN ('01', '02')),
     ADD COLUMN remarks VARCHAR(60);
 
-COMMENT ON COLUMN public.payment_wallets.environment IS '环境 (01-定版, 02-预演)';
-COMMENT ON COLUMN public.payment_wallets.remarks IS '备注';
+
 
 
 ALTER TABLE receiver_info
@@ -37,14 +82,7 @@ COMMENT ON COLUMN public.receiver_info.remarks IS '备注';
 
 
 
--- 添加中文注释
-COMMENT ON TABLE public.payment_wallets IS '支付钱包表';
-COMMENT ON COLUMN public.payment_wallets.wallet_id_account IS '钱包ID/账户';
-COMMENT ON COLUMN public.payment_wallets.wallet_account_name IS '钱包/账户名称';
-COMMENT ON COLUMN public.payment_wallets.contract_number IS '签约协议号';
-COMMENT ON COLUMN public.payment_wallets.bank_code IS '合作银行编号';
-COMMENT ON COLUMN public.payment_wallets.created_at IS '创建时间';
-COMMENT ON COLUMN public.payment_wallets.transfer_type IS '转出方类型 (00-对公钱包, 01-对公账户)';
+
 
 
 ALTER TABLE payment_wallets
@@ -56,13 +94,7 @@ INSERT INTO payment_wallets (wallet_id_account, wallet_account_name, contract_nu
 VALUES ('walqqqq1234415', 'Wallet One', '123456789012345678901234567890123', '12345678901234', '01');
 
 
-CREATE TABLE public.receiver_info (
-                                      transfer_type character varying(2) NOT NULL,  -- 转入方类型
-                                      receiver_id character varying(19) NOT NULL,  -- 收款钱包ID/手机号/身份证号
-                                      user_name character varying(60) NOT NULL,  -- 用户名称
-                                      created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,  -- 创建时间
-                                      CONSTRAINT receiver_info_pkey PRIMARY KEY(receiver_id)  -- 主键为收款账户ID
-);
+
 
 CREATE TABLE batch_transfer_summary (
                                         batch_no VARCHAR(35) PRIMARY KEY,                -- 批次号，主键，格式为 yyyyMMdd + 2位银银渠道号 + 合作银行编号 + 自定义序列，总长度不超过35，或自定义格式保持唯一性

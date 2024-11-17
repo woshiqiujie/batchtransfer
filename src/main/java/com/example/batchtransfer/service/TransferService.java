@@ -45,8 +45,8 @@ public class TransferService {
         }
 
         // 检查批次号是否为空或长度不符合要求
-        if (summaryInfo.getBatchNo() == null || summaryInfo.getBatchNo().length() != 32) {
-            errors.put("batchNo", "批次号不能为空且必须为32个字符");
+        if (summaryInfo.getBatchNo() == null || summaryInfo.getBatchNo().length() > 36) {
+            errors.put("batchNo", "批次号不能为空且必须小于等于36个字符");
         }
 
         // 检查付款钱包是否为空
@@ -111,8 +111,8 @@ public class TransferService {
                 }
 
                 // 检查付款用途
-                if (transaction.getPaymentPurpose() == null || transaction.getPaymentPurpose().length() != 4) {
-                    errors.put("paymentPurpose", "付款用途必须为4个字符");
+                if (transaction.getPaymentPurpose() == null || transaction.getPaymentPurpose().isEmpty()) {
+                    errors.put("paymentPurpose", "付款用途不能为空");
                 }
 
                 // 检查用途描述
