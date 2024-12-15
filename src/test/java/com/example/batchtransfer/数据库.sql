@@ -140,6 +140,31 @@ COMMENT ON COLUMN batch_transfer_summary.creation_time IS '创建时间，系统
 
 ALTER TABLE batch_transfer_summary
     ALTER COLUMN creation_date TYPE DATE USING creation_date::DATE;
-ALTER TABLE batch_transfer_summary
-    ALTER COLUMN creation_date TYPE DATE USING creation_date::DATE;
 
+
+ALTER TABLE batch_transfer_summary
+    ALTER COLUMN creation_time TYPE DATE USING creation_time::timestamp;
+
+ALTER TABLE batch_transfer_summary
+    ALTER COLUMN creation_time TYPE TIMESTAMP USING creation_time::TIMESTAMP,
+    ALTER COLUMN creation_time SET DEFAULT CURRENT_TIMESTAMP;
+
+
+ALTER TABLE batch_transfer_summary
+    ADD COLUMN creation_time_new TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+
+UPDATE batch_transfer_summary
+SET creation_time_new = CURRENT_DATE + creation_time;
+
+ALTER TABLE batch_transfer_summary
+    DROP COLUMN creation_time;
+
+ALTER TABLE batch_transfer_summary
+    RENAME COLUMN creation_time_new TO creation_time;
+
+-- 修改 creation_time 列的数据类型为 TIMESTAMP 并设置默认值为 CURRENT_TIMESTAMP
+ALTER TABLE batch_transfer_summary
+    ALTER COLUMN creation_time TYPE TIMESTAMP WITHOUT TIME ZONE;
+
+ALTER TABLE batch_transfer_summary
+    ALTER COLUMN creation_time SET DEFAULT CURRENT_TIMESTAMP;

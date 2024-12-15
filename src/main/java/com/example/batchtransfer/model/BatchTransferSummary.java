@@ -3,7 +3,7 @@ package com.example.batchtransfer.model;
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "batch_transfer_summary")
@@ -56,9 +56,9 @@ public class BatchTransferSummary {
     @Column(name = "creation_date", nullable = false)
     private LocalDate creationDate = LocalDate.now(); // 当前日期，类型为 LocalDate
 
-    // 修改为 LocalTime 类型，用于存储当前时间，精确到分钟
-    @Column(name = "creation_time", nullable = false)
-    private LocalTime creationTime = LocalTime.now().withSecond(0).withNano(0); // 当前时间，类型为 LocalTime，精确到分钟
+    // 修改为 LocalDateTime 类型，用于存储当前时间，精确到分钟
+    @Column(name = "creation_time", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    private LocalDateTime creationTime; // 当前时间，类型为 LocalDateTime
 
     // Getters and setters
 
@@ -182,11 +182,11 @@ public class BatchTransferSummary {
         this.creationDate = creationDate;
     }
 
-    public LocalTime getCreationTime() {
+    public LocalDateTime getCreationTime() {
         return creationTime;
     }
 
-    public void setCreationTime(LocalTime creationTime) {
+    public void setCreationTime(LocalDateTime creationTime) {
         this.creationTime = creationTime;
     }
 }

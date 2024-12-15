@@ -4,6 +4,10 @@ import com.example.batchtransfer.model.ReceiverInfo;
 import com.example.batchtransfer.model.ResponseMessage;
 import com.example.batchtransfer.service.ReceiverInfoService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -11,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -61,31 +66,53 @@ public class ReceiverInfoController {
                     .body(new ResponseMessage("500", "内部服务器错误: " + e.getMessage()));
         }
     }
-    // 多条件模糊查询接口
+
+    // 多条件模糊查询接口，支持分页和排序
     @PostMapping("/search")
-    public ResponseEntity<ResponseMessage> searchReceiverInfo(@RequestBody Map<String, String> searchCriteria) {
+    public ResponseEntity<ResponseMessage> searchPaymentWallet(@RequestBody Map<String, String> params) {
         try {
-            // 从请求体中提取查询条件
-            String transferType = searchCriteria.get("transferType");
-            String environment = searchCriteria.get("environment");
-            String receiverId = searchCriteria.get("receiverId");
+            String transferType = params.getOrDefault("transferType", "");
+            String environment = params.getOrDefault("environment", "");
+            String receiverId = params.getOrDefault("receiverId", "");
+            int page = Integer.parseInt(params.getOrDefault("page", "0")); // 默认页码为0
+            int pageSize = Integer.parseInt(params.getOrDefault("pageSize", "10")); // 默认每页大小为10
 
-            // 执行查询并返回结果
-            List<ReceiverInfo> result = service.searchReceiverInfo(transferType, environment, receiverId);
+            String sortField = params.getOrDefault("sortField", "createdAt"); // 默认排序字段为 createdAt
+            String sortDirection = params.getOrDefault("sortDirection", "DESC"); // 默认排序方向为 DESC
 
-            if (result.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                        new ResponseMessage("404", "未找到符合条件的收款信息")
+            Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortField);
+            Pageable pageable = PageRequest.of(page, pageSize, sort);
+
+            Map<String, Object> response = service.searchReceiverInfo(transferType, environment, receiverId, pageable);
+
+            if (response == null) {
+
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                        new ResponseMessage("500", "内部服务器错误: 响应为空")
                 );
             }
-            return ResponseEntity.status(HttpStatus.OK).body(
-                    new ResponseMessage("0", "查询成功", result)
-            );
 
+            List<ReceiverInfo> results = (List<ReceiverInfo>) response.get("results");
+
+            if (results == null || results.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMessage("404", "未找到符合条件的钱包信息"));
+            }
+
+            return ResponseEntity.ok(new ResponseMessage("0", "查询成功", response));
+
+        } catch (NumberFormatException e) {
+
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    new ResponseMessage("400", "页码或每页大小参数格式不正确")
+            );
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ResponseMessage("500", "内部服务器错误: " + e.getMessage()));
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    new ResponseMessage("500", "内部服务器错误: " + e.getMessage())
+            );
         }
     }
+
+
+
 }

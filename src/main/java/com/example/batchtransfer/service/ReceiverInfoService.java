@@ -4,12 +4,16 @@ import com.example.batchtransfer.model.ReceiverInfo;
 import com.example.batchtransfer.model.ResponseMessage;
 import com.example.batchtransfer.repository.ReceiverInfoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import javax.validation.Valid;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -88,14 +92,18 @@ public class ReceiverInfoService {
         }
     }
 
-    // 根据转入方类型查询
-    // 多条件模糊查询
-    public List<ReceiverInfo> searchReceiverInfo(String transferType, String environment, String receiverId) {
-        // 根据条件执行模糊查询
-        return repository.findByCriteria(
-                transferType.isEmpty() ? null : transferType,
-                environment.isEmpty() ? null : environment,
-                receiverId.isEmpty() ? null : receiverId
-        );
+// 根据条件查询收款信息，并支持分页和排序
+
+    public Map<String, Object> searchReceiverInfo(String transferType, String environment, String walletIdAccount, Pageable pageable) {
+        Page<ReceiverInfo> resultsPage = repository.searchReceiverInfo(transferType, environment, walletIdAccount, pageable);
+
+        List<ReceiverInfo> results = resultsPage.getContent();
+        Map<String, Object> response = new HashMap<>();
+        response.put("totalItems", resultsPage.getTotalElements());
+        response.put("totalPages", resultsPage.getTotalPages());
+        response.put("currentPage", resultsPage.getNumber());
+        response.put("results", results);
+
+        return response;
     }
 }

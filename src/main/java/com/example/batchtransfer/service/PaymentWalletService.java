@@ -4,19 +4,28 @@ import com.example.batchtransfer.model.PaymentWallet;
 import com.example.batchtransfer.model.ResponseMessage;
 import com.example.batchtransfer.repository.PaymentWalletRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class PaymentWalletService {
 
     @Autowired
     private PaymentWalletRepository repository;
+
+    private static final Logger logger = LoggerFactory.getLogger(PaymentWalletService.class);
 
     // 新增钱包/账户信息
     public ResponseEntity<ResponseMessage> addPaymentWallet(PaymentWallet paymentWallet) {
@@ -78,6 +87,7 @@ public class PaymentWalletService {
 
         } catch (Exception e) {
             // 捕获异常，返回500错误
+            logger.error("内部服务器错误: {}", e.getMessage(), e); // 添加日志记录
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                     new ResponseMessage("500", "内部服务器错误: " + e.getMessage())
             );
@@ -97,13 +107,19 @@ public class PaymentWalletService {
         return new ResponseMessage("0", "删除成功");
     }
 
-    // 根据转出方类型查询钱包信息
-    public List<PaymentWallet> searchPaymentWallet(String transferType, String environment, String walletIdAccount) {
-        return repository.findByCriteria(
-                transferType.isEmpty() ? null : transferType,
-                environment.isEmpty() ? null : environment,
-                walletIdAccount.isEmpty() ? null : walletIdAccount
-        );
-    }
+    // 根据转出方类型查询钱包信息，并支持分页
+    public Map<String, Object> searchPaymentWallet(String transferType, String environment, String walletIdAccount, Pageable pageable) {
+        logger.info("Pageable in Service: {}", pageable); // 日志输出 Pageable 参数
 
+        Page<PaymentWallet> resultsPage = repository.findByCriteria(transferType, environment, walletIdAccount, pageable);
+
+        List<PaymentWallet> results = resultsPage.getContent();
+        Map<String, Object> response = new HashMap<>();
+        response.put("totalItems", resultsPage.getTotalElements());
+        response.put("totalPages", resultsPage.getTotalPages());
+        response.put("currentPage", resultsPage.getNumber());
+        response.put("results", results);
+
+        return response;
+    }
 }

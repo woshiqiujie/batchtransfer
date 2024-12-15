@@ -7,6 +7,8 @@ import com.example.batchtransfer.repository.BatchTransferSummaryRepository;
 import com.example.batchtransfer.sdk.BatchTransferSDK;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedWriter;
@@ -16,6 +18,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
@@ -147,7 +150,7 @@ public class TransferService {
         // 校验批次号、付款方钱包ID、付款方钱包名称等信息
         Map<String, Object> errors = validateSummaryInfo(summaryInfo);
         if (errors != null && !errors.isEmpty()) {
-            throw new IllegalArgumentException("校验错误: " + errors.toString());
+            throw new IllegalArgumentException("校验错误: " + errors);
         }
 
         // 生成文件名
@@ -235,6 +238,8 @@ public class TransferService {
         summary.setCenterFlag(summaryInfo.getCenterFlag());
         summary.setFileType(summaryInfo.getFileType());
         summary.setFileName(file.getName());
+        // 设置 creation_time 为当前时间
+        summary.setCreationTime(LocalDateTime.now());
 
         batchTransferSummaryRepository.save(summary);
 
@@ -246,14 +251,19 @@ public class TransferService {
         return result;
     }
 
-    // 查询批量转账汇总信息
-    public List<BatchTransferSummary> queryBatchTransferSummary(String environment, String batchNo, String payerWallet, String fileType) {
-        // 默认查询所有，如果某个条件为空则忽略
-        return batchTransferSummaryRepository.queryBatchTransferSummary(
-                environment == null ? "" : environment,
-                batchNo == null ? "" : batchNo,
-                payerWallet == null ? "" : payerWallet,
-                fileType == null ? "" : fileType
-        );
+
+     // 根据转出方类型查询钱包信息，并支持分页
+    public Map<String, Object> queryBatchTransferSummary(String environment, String payerWallet, String batchNo, String fileType, Pageable pageable) {
+
+        Page<BatchTransferSummary> resultsPage = batchTransferSummaryRepository.findByCriteria(environment, payerWallet, batchNo, fileType, pageable);
+
+        List<BatchTransferSummary> results = resultsPage.getContent();
+        Map<String, Object> response = new HashMap<>();
+        response.put("totalItems", resultsPage.getTotalElements());
+        response.put("totalPages", resultsPage.getTotalPages());
+        response.put("currentPage", resultsPage.getNumber());
+        response.put("results", results);
+
+        return response;
     }
 }
